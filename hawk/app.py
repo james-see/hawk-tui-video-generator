@@ -14,7 +14,7 @@ from hawk.config import PROJECTS, COLORS, Project
 from hawk import replicate_client, video
 
 
-class ProjectSelector(Static):
+class ProjectSelector(Static, can_focus=True):
     """Sidebar showing available projects."""
 
     selected = reactive("dxp-albs")  # Default to DXP where images exist
@@ -37,7 +37,7 @@ class ProjectSelector(Static):
         )
 
 
-class ImageList(Static):
+class ImageList(Static, can_focus=True):
     """Display list of images in current project."""
 
     cursor = reactive(0)
@@ -159,7 +159,7 @@ class StatusBar(Static):
         return Text(f"✓ {self.message}", style=f"bold {COLORS['success']}")
 
 
-class MenuPanel(Static):
+class MenuPanel(Static, can_focus=True):
     """Right panel showing available actions."""
 
     def render(self) -> Panel:
@@ -192,8 +192,10 @@ class MenuPanel(Static):
         )
 
 
-class HawkApp(App):
-    """Hawk TUI main application."""
+class HawkTUI(App):
+    """Hawk TUI - TikTok video creator."""
+
+    TITLE = "HawkTUI"
 
     CSS = """
     Screen {
@@ -227,6 +229,11 @@ class HawkApp(App):
         height: 5;
         dock: bottom;
         padding: 1;
+        display: none;
+    }
+
+    #prompt-container.visible {
+        display: block;
     }
 
     #prompt-input {
@@ -247,12 +254,24 @@ class HawkApp(App):
         height: auto;
     }
 
+    ProjectSelector:focus {
+        border: solid #c9a227;
+    }
+
     ImageList {
         height: 1fr;
     }
 
+    ImageList:focus {
+        border: solid #c9a227;
+    }
+
     MenuPanel {
         height: auto;
+    }
+
+    MenuPanel:focus {
+        border: solid #c9a227;
     }
     """
 
@@ -261,8 +280,10 @@ class HawkApp(App):
         Binding("g", "generate", "Generate"),
         Binding("b", "browse", "Browse"),
         Binding("v", "create_video", "Video"),
-        Binding("o", "open_image", "Open"),
-        Binding("tab", "toggle_select", "Select"),
+        Binding("o", "open_image", "Open", priority=True),
+        Binding("enter", "open_image", "Open", priority=True),
+        Binding("tab", "focus_next_panel", "Next Panel", priority=True),
+        Binding("shift+tab", "focus_prev_panel", "Prev Panel", priority=True),
         Binding("space", "toggle_select", "Select"),
         Binding("a", "select_all", "Select All"),
         Binding("d", "delete_selected", "Delete"),
@@ -270,8 +291,8 @@ class HawkApp(App):
         Binding("2", "select_project_2", "Latin"),
         Binding("3", "select_project_3", "DXP"),
         Binding("escape", "clear_selection", "Clear"),
-        Binding("up", "cursor_up", "Up"),
-        Binding("down", "cursor_down", "Down"),
+        Binding("up", "cursor_up", "Up", priority=True),
+        Binding("down", "cursor_down", "Down", priority=True),
         Binding("k", "cursor_up", "Up"),
         Binding("j", "cursor_down", "Down"),
     ]
@@ -314,6 +335,8 @@ class HawkApp(App):
         selector = self.query_one("#project-selector", ProjectSelector)
         selector.selected = self.current_project
         self.refresh_images()
+        # Focus the image list by default
+        self.query_one("#image-list").focus()
 
     @property
     def project(self) -> Project:
@@ -342,6 +365,35 @@ class HawkApp(App):
         status = self.query_one("#status-bar", StatusBar)
         status.message = message
         status.is_working = working
+
+    # Panel focus cycling
+    def action_focus_next_panel(self) -> None:
+        """Cycle focus to next panel: Projects -> Images -> Actions."""
+        panels = ["#project-selector", "#image-list", "#menu-panel"]
+        current = self.focused
+        current_id = f"#{current.id}" if current and current.id else None
+
+        if current_id in panels:
+            idx = panels.index(current_id)
+            next_idx = (idx + 1) % len(panels)
+        else:
+            next_idx = 1  # Default to image list
+
+        self.query_one(panels[next_idx]).focus()
+
+    def action_focus_prev_panel(self) -> None:
+        """Cycle focus to previous panel."""
+        panels = ["#project-selector", "#image-list", "#menu-panel"]
+        current = self.focused
+        current_id = f"#{current.id}" if current and current.id else None
+
+        if current_id in panels:
+            idx = panels.index(current_id)
+            prev_idx = (idx - 1) % len(panels)
+        else:
+            prev_idx = 1  # Default to image list
+
+        self.query_one(panels[prev_idx]).focus()
 
     # Project selection
     def action_select_project_1(self) -> None:
@@ -380,12 +432,20 @@ class HawkApp(App):
 
     def action_open_image(self) -> None:
         """Open the current image."""
+        # Don't open if prompt is visible (Enter should submit prompt)
+        prompt_container = self.query_one("#prompt-container")
+        if prompt_container.has_class("visible"):
+            return
+
         images = self.image_list.images
         cursor = self.image_list.cursor
         if images and 0 <= cursor < len(images):
             import subprocess
-            subprocess.run(["open", str(images[cursor])])
-            self.set_status(f"Opened: {images[cursor].name}")
+            image_path = images[cursor]
+            self.set_status(f"Opening: {image_path.name}")
+            subprocess.run(["open", str(image_path)])
+        else:
+            self.set_status("No image to open")
 
     def action_delete_selected(self) -> None:
         """Delete selected images."""
@@ -402,25 +462,45 @@ class HawkApp(App):
         self.refresh_images()
         self.set_status(f"Deleted {count} images")
 
-    @work(exclusive=True, thread=True)
     def action_generate(self) -> None:
-        """Generate images from prompt."""
+        """Show prompt input for generation."""
+        prompt_container = self.query_one("#prompt-container")
         prompt_input = self.query_one("#prompt-input", Input)
-        prompt = prompt_input.value.strip()
 
-        if not prompt:
-            self.call_from_thread(self.set_status, "Enter a prompt first")
-            return
+        if prompt_container.has_class("visible"):
+            # Already visible - if there's a prompt, generate
+            prompt = prompt_input.value.strip()
+            if prompt:
+                self._do_generate(prompt)
+            else:
+                # Hide it
+                prompt_container.remove_class("visible")
+                self.set_status("Generation cancelled")
+        else:
+            # Show the prompt input
+            prompt_container.add_class("visible")
+            prompt_input.focus()
+            self.set_status("Enter prompt, press Enter to generate, Esc to cancel")
 
+    @work(exclusive=True, thread=True)
+    def _do_generate(self, prompt: str) -> None:
+        """Actually generate images."""
         self.call_from_thread(self.set_status, f"Generating with {self.project.name}...", True)
 
         try:
             paths = replicate_client.generate_image(self.project, prompt)
             self.call_from_thread(self.refresh_images)
             self.call_from_thread(self.set_status, f"Generated {len(paths)} image(s)")
-            self.call_from_thread(lambda: setattr(prompt_input, "value", ""))
+            self.call_from_thread(self._hide_prompt)
         except Exception as e:
             self.call_from_thread(self.set_status, f"Error: {str(e)[:50]}")
+
+    def _hide_prompt(self) -> None:
+        """Hide the prompt input."""
+        prompt_container = self.query_one("#prompt-container")
+        prompt_input = self.query_one("#prompt-input", Input)
+        prompt_container.remove_class("visible")
+        prompt_input.value = ""
 
     @work(exclusive=True, thread=True)
     def action_create_video(self) -> None:
@@ -450,12 +530,24 @@ class HawkApp(App):
     async def on_input_submitted(self, event: Input.Submitted) -> None:
         """Handle Enter key in prompt input."""
         if event.input.id == "prompt-input":
-            self.action_generate()
+            prompt = event.value.strip()
+            if prompt:
+                self._do_generate(prompt)
+
+    def on_key(self, event) -> None:
+        """Handle key events - allow Escape to hide prompt."""
+        if event.key == "escape":
+            prompt_container = self.query_one("#prompt-container")
+            if prompt_container.has_class("visible"):
+                self._hide_prompt()
+                self.set_status("Generation cancelled")
+                event.prevent_default()
+                event.stop()
 
 
 def main():
     """Entry point."""
-    app = HawkApp()
+    app = HawkTUI()
     app.run()
 
 
