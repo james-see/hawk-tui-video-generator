@@ -462,6 +462,12 @@ class HawkTUI(App):
         if isinstance(self.focused, Input):
             return
 
+        # If project selector is focused, confirm selection and move to images
+        if isinstance(self.focused, ProjectSelector):
+            self.query_one("#image-list").focus()
+            self.set_status(f"Selected {self.project.name}")
+            return
+
         images = self.image_list.images
         cursor = self.image_list.cursor
         if images and 0 <= cursor < len(images):
