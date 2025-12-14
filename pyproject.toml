@@ -18,6 +18,7 @@ dependencies = [
 
 [project.scripts]
 hawk = "hawk.main:main"
+hawktui = "hawk.main:main"
 
 [build-system]
 requires = ["hatchling"]

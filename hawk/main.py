@@ -1,12 +1,11 @@
 """Hawk TUI entry point."""
 
-import sys
-from hawk.app import HawkApp
+from hawk.app import HawkTUI
 
 
 def main():
     """Main entry point."""
-    app = HawkApp()
+    app = HawkTUI()
     app.run()
 
 
