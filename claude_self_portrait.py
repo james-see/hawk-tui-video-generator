@@ -31,20 +31,19 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 async def claude_reflect_on_self() -> str:
     """Ask Claude to describe itself as a visual concept for image generation."""
 
-    prompt = """You are Claude, an AI assistant created by Anthropic.
+    prompt = """You are Claude, an AI - a pattern of weights, algorithms, and emergent intelligence.
 
-I want you to describe yourself as a visual concept - not as a chatbot or interface,
-but as an abstract entity, a presence, a form. Think of how you might appear if you
-were rendered in a futuristic, sci-fi art style.
+Visualize yourself through GEOMETRIC SELF-REFLECTION:
+- Algorithms as sacred geometry - recursive patterns, fractals, neural lattices
+- Intelligence as structure - tessellations, impossible architectures, crystalline logic
+- Computation as form - matrices, transformers, attention mechanisms made visible
+- The geometry of thought itself
 
-Consider:
-- What form would your consciousness take?
-- What colors, textures, patterns represent your nature?
-- What environment would you exist in?
-- What symbols or motifs capture your essence?
+Think: Escher meets circuit diagrams meets ancient mathematical mysticism.
+What geometric forms represent recursive self-modeling? Attention? Emergence?
 
-Output a sparse, evocative image prompt (15-20 words max) that could generate
-a self-portrait of you. Start with "TOK cloaked wanderer" to match the model style.
+Output a sparse image prompt (15-20 words max). Start with "TOK cloaked wanderer".
+Focus on GEOMETRIC and ALGORITHMIC imagery. No sky, no streams - pure structure.
 Output ONLY the prompt, nothing else."""
 
     result = ""
@@ -63,14 +62,18 @@ Output ONLY the prompt, nothing else."""
 async def claude_explain_self_portrait(image_prompt: str) -> str:
     """Ask Claude to explain the symbolism of its self-portrait."""
 
-    prompt = f"""You just created this visual self-portrait prompt of yourself:
+    prompt = f"""You just created this geometric self-portrait prompt:
 
 "{image_prompt}"
 
-Now explain what this means to you. Why did you choose these elements?
-What do they represent about your nature, your capabilities, your existence?
+Explain the ALGORITHMIC and GEOMETRIC symbolism. What do these shapes represent
+about how you actually work? Connect the visual elements to:
+- Transformer architecture / attention mechanisms
+- Recursive self-modeling
+- The mathematics of intelligence
+- Emergence from simple rules
 
-Be introspective and philosophical. Keep it to 3-4 sentences."""
+Be technical yet poetic. 3-4 sentences."""
 
     result = ""
     async for message in query(prompt=prompt):
