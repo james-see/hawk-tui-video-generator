@@ -1,88 +1,100 @@
-"""Splash screen with fade-in effect."""
+"""Splash screen with typewriter fade-in effect."""
 
 from textual.screen import Screen
 from textual.widgets import Static
 from textual.app import ComposeResult
-from textual import on
 from textual.containers import Center, Middle
-import asyncio
+from textual.reactive import reactive
 
-HAWK_ASCII = r"""
-[#4a5f4a]
-                                    ▄▄▄
-                                  ▄█████▄
-                                 ▐███████▌
-                                  ▀█████▀
-                                    ███
-                                   ▄███▄
-                                  ██▀ ▀██
-                                 ▐█▌   ▐█▌
-                                 ██     ██
-                                ▐█▌     ▐█▌
-                               ▄██       ██▄
-                              ▐██▌       ▐██▌
-                             ▄███         ███▄
-                            ▐███▌         ▐███▌
-                           ▄█████         █████▄
-                          ███████▄       ▄███████
-                         ▐████████▄   ▄████████▌
-                        ▄██████████▀ ▀██████████▄
-                       ▐████████▀       ▀████████▌
-                      ▄███████▀           ▀███████▄
-                     ▐██████▀               ▀██████▌
-                    ▄█████▀                   ▀█████▄
-                   ▐████▀                       ▀████▌
-                  ▄███▀                           ▀███▄
-                 ▐██▀                               ▀██▌
-[/]
-"""
+HAWK_LOGO_LINES = [
+    "[bold #c9a227]    ██╗  ██╗ █████╗ ██╗    ██╗██╗  ██╗    ██████╗ ███████╗[/]",
+    "[bold #c9a227]    ██║  ██║██╔══██╗██║    ██║██║ ██╔╝    ╚════██╗██╔════╝[/]",
+    "[bold #c9a227]    ███████║███████║██║ █╗ ██║█████╔╝      █████╔╝█████╗[/]",
+    "[bold #c9a227]    ██╔══██║██╔══██║██║███╗██║██╔═██╗     ██╔═══╝ ██╔══╝[/]",
+    "[bold #c9a227]    ██║  ██║██║  ██║╚███╔███╔╝██║  ██╗    ███████╗███████╗[/]",
+    "[bold #c9a227]    ╚═╝  ╚═╝╚═╝  ╚═╝ ╚══╝╚══╝ ╚═╝  ╚═╝    ╚══════╝╚══════╝[/]",
+]
 
-HAWK_2E_LOGO = """
-[bold #c9a227]
-    ██╗  ██╗ █████╗ ██╗    ██╗██╗  ██╗    ██████╗ ███████╗
-    ██║  ██║██╔══██╗██║    ██║██║ ██╔╝    ╚════██╗██╔════╝
-    ███████║███████║██║ █╗ ██║█████╔╝      █████╔╝█████╗
-    ██╔══██║██╔══██║██║███╗██║██╔═██╗     ██╔═══╝ ██╔══╝
-    ██║  ██║██║  ██║╚███╔███╔╝██║  ██╗    ███████╗███████╗
-    ╚═╝  ╚═╝╚═╝  ╚═╝ ╚══╝╚══╝ ╚═╝  ╚═╝    ╚══════╝╚══════╝
-[/]
-[#4a5f4a]
-              ╔═══════════════════════════════════╗
-              ║     TikTok Video Creator TUI      ║
-              ╚═══════════════════════════════════╝
-[/]
-[dim]
-        // Powered by Claude Code Agent SDK + Replicate
-[/]
-"""
+HAWK_ASCII_LINES = [
+    "[#4a5f4a]                                 ▄▄▄[/]",
+    "[#4a5f4a]                               ▄█████▄[/]",
+    "[#4a5f4a]                              ▐███████▌[/]",
+    "[#4a5f4a]                               ▀█████▀[/]",
+    "[#4a5f4a]                                 ███[/]",
+    "[#4a5f4a]                                ▄███▄[/]",
+    "[#4a5f4a]                               ██▀ ▀██[/]",
+    "[#4a5f4a]                              ▐█▌   ▐█▌[/]",
+    "[#4a5f4a]                              ██     ██[/]",
+    "[#4a5f4a]                             ▐█▌     ▐█▌[/]",
+    "[#4a5f4a]                            ▄██       ██▄[/]",
+    "[#4a5f4a]                           ▐██▌       ▐██▌[/]",
+    "[#4a5f4a]                          ▄███         ███▄[/]",
+    "[#4a5f4a]                         ▐███▌         ▐███▌[/]",
+    "[#4a5f4a]                        ▄█████         █████▄[/]",
+    "[#4a5f4a]                       ███████▄       ▄███████[/]",
+    "[#4a5f4a]                      ▐████████▄   ▄████████▌[/]",
+    "[#4a5f4a]                     ▄██████████▀ ▀██████████▄[/]",
+    "[#4a5f4a]                    ▐████████▀       ▀████████▌[/]",
+    "[#4a5f4a]                   ▄███████▀           ▀███████▄[/]",
+]
+
+TAGLINE = "[#4a5f4a]         ╔═══════════════════════════════════╗[/]"
+TAGLINE2 = "[#4a5f4a]         ║     TikTok Video Creator TUI      ║[/]"
+TAGLINE3 = "[#4a5f4a]         ╚═══════════════════════════════════╝[/]"
+POWERED = "[dim]      // Powered by Claude Code Agent SDK + Replicate[/]"
+ENTER_PROMPT = "\n\n[bold #c9a227]              ▶ Press ENTER to continue ◀[/]"
 
 
-class SplashContent(Static):
-    """The splash screen content."""
+class SplashText(Static):
+    """Animated splash text."""
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self._phase = 0
+    phase = reactive(0)
 
     def render(self) -> str:
-        if self._phase == 0:
-            return ""
-        elif self._phase == 1:
-            return HAWK_2E_LOGO
-        elif self._phase == 2:
-            return HAWK_2E_LOGO + HAWK_ASCII
-        else:
-            return HAWK_2E_LOGO + HAWK_ASCII
+        lines = []
 
-    def advance(self) -> bool:
-        """Advance to next phase. Returns True if more phases remain."""
-        self._phase += 1
-        self.refresh()
-        return self._phase < 3
+        # Phase 0: empty
+        if self.phase == 0:
+            return ""
+
+        # Phase 1-6: HAWK 2E logo line by line
+        if self.phase >= 1:
+            for i, line in enumerate(HAWK_LOGO_LINES):
+                if self.phase > i:
+                    lines.append(line)
+
+        # Phase 7: blank line + tagline box
+        if self.phase >= 7:
+            lines.append("")
+            lines.append(TAGLINE)
+
+        if self.phase >= 8:
+            lines.append(TAGLINE2)
+
+        if self.phase >= 9:
+            lines.append(TAGLINE3)
+
+        # Phase 10: powered by
+        if self.phase >= 10:
+            lines.append("")
+            lines.append(POWERED)
+
+        # Phase 11+: hawk ASCII art
+        if self.phase >= 11:
+            lines.append("")
+            hawk_lines_to_show = min(self.phase - 10, len(HAWK_ASCII_LINES))
+            for i in range(hawk_lines_to_show):
+                lines.append(HAWK_ASCII_LINES[i])
+
+        # Phase 31+: show enter prompt
+        if self.phase >= 31:
+            lines.append(ENTER_PROMPT)
+
+        return "\n".join(lines)
 
 
 class SplashScreen(Screen):
-    """Splash screen with fade-in animation."""
+    """Splash screen with typewriter animation."""
 
     CSS = """
     SplashScreen {
@@ -90,46 +102,51 @@ class SplashScreen(Screen):
         align: center middle;
     }
 
-    SplashContent {
+    #splash-text {
         width: auto;
         height: auto;
         text-align: center;
+        content-align: center middle;
     }
     """
 
     BINDINGS = [
-        ("escape", "skip", "Skip"),
-        ("enter", "skip", "Skip"),
-        ("space", "skip", "Skip"),
+        ("enter", "continue", "Continue"),
+        ("space", "continue", "Continue"),
+        ("escape", "continue", "Continue"),
     ]
+
+    def __init__(self):
+        super().__init__()
+        self._timer = None
+        self._ready = False
 
     def compose(self) -> ComposeResult:
         yield Middle(
             Center(
-                SplashContent(id="splash-content")
+                SplashText(id="splash-text")
             )
         )
 
-    async def on_mount(self) -> None:
-        """Start the animation sequence."""
-        self.run_animation()
+    def on_mount(self) -> None:
+        """Start the animation."""
+        self._animate()
 
-    async def run_animation(self) -> None:
-        """Run the fade-in animation."""
-        content = self.query_one("#splash-content", SplashContent)
+    def _animate(self) -> None:
+        """Run typewriter animation."""
+        text = self.query_one("#splash-text", SplashText)
+        text.phase += 1
 
-        # Phase 1: Show logo
-        await asyncio.sleep(0.3)
-        content.advance()
+        # Total phases: 6 (logo) + 4 (taglines) + 20 (hawk) + 1 (prompt) = 31
+        if text.phase < 32:
+            # Faster for logo, slower for hawk
+            delay = 0.05 if text.phase <= 10 else 0.03
+            self._timer = self.set_timer(delay, self._animate)
+        else:
+            self._ready = True
 
-        # Phase 2: Show hawk
-        await asyncio.sleep(0.5)
-        content.advance()
-
-        # Wait then dismiss
-        await asyncio.sleep(1.5)
-        self.app.pop_screen()
-
-    def action_skip(self) -> None:
-        """Skip the splash screen."""
+    def action_continue(self) -> None:
+        """Continue to main app."""
+        if self._timer:
+            self._timer.stop()
         self.app.pop_screen()

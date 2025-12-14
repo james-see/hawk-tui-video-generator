@@ -19,7 +19,7 @@ from hawk.screens.preview import ImagePreviewScreen
 class ProjectSelector(Static, can_focus=True):
     """Sidebar showing available projects."""
 
-    selected = reactive("dxp-albs")  # Default to DXP where images exist
+    selected = reactive("dxp-labs")  # Default to DXP where images exist
 
     def render(self) -> Panel:
         lines = []
@@ -29,8 +29,6 @@ class ProjectSelector(Static, can_focus=True):
             else:
                 line = f" [{COLORS['dim']}][{i}][/] {proj.name}"
             lines.append(line)
-            lines.append(f"    [dim]{proj.description}[/]")
-            lines.append("")
 
         return Panel(
             "\n".join(lines),
@@ -182,7 +180,7 @@ class MenuPanel(Static, can_focus=True):
             f"[bold]Projects[/]",
             f"[{COLORS['accent']}]1[/] Wedding Vision",
             f"[{COLORS['accent']}]2[/] Latin Bible",
-            f"[{COLORS['accent']}]3[/] DXP Albums",
+            f"[{COLORS['accent']}]3[/] DXP Labs",
             "",
             f"[{COLORS['accent']}]q[/] Quit",
         ]
