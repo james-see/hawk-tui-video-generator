@@ -7,7 +7,25 @@ from pathlib import Path
 from datetime import datetime
 from typing import Optional
 
+from dotenv import load_dotenv
+load_dotenv()
+
+# Ensure token is set
+if os.getenv('REPLICATE_API_TOKEN'):
+    os.environ['REPLICATE_API_TOKEN'] = os.getenv('REPLICATE_API_TOKEN')
+
 from hawk.config import Project, REPLICATE_DEFAULT_PARAMS
+
+# Cache for model versions
+_model_versions: dict[str, str] = {}
+
+
+def _get_model_version(model_name: str) -> str:
+    """Get the latest version for a model, caching the result."""
+    if model_name not in _model_versions:
+        model = replicate.models.get(model_name)
+        _model_versions[model_name] = f"{model_name}:{model.latest_version.id}"
+    return _model_versions[model_name]
 
 
 def generate_image(
@@ -41,8 +59,9 @@ def generate_image(
     if seed is not None:
         input_params["seed"] = seed
 
-    # Run the model
-    output = replicate.run(project.model, input=input_params)
+    # Run the model with explicit version
+    model_version = _get_model_version(project.model)
+    output = replicate.run(model_version, input=input_params)
 
     # Download images
     saved_paths = []
