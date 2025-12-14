@@ -299,7 +299,7 @@ class HawkTUI(App):
         Binding("j", "cursor_down", "Down"),
     ]
 
-    current_project = reactive("dxp-albs")  # Start with DXP where images exist
+    current_project = reactive("dxp-labs")  # Start with DXP where images exist
 
     def __init__(self):
         super().__init__()
@@ -407,7 +407,7 @@ class HawkTUI(App):
         self.current_project = "latin-bible"
 
     def action_select_project_3(self) -> None:
-        self.current_project = "dxp-albs"
+        self.current_project = "dxp-labs"
 
     # Cursor movement
     def action_cursor_up(self) -> None:

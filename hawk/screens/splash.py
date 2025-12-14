@@ -60,8 +60,8 @@ HAWK_2E_LOGO = """
 class SplashContent(Static):
     """The splash screen content."""
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self._phase = 0
 
     def render(self) -> str:

@@ -58,9 +58,9 @@ PROJECTS = {
         trigger="",  # Uses prayer text directly
         description="Catholic prayers and religious imagery",
     ),
-    "dxp-albs": Project(
-        name="DXP Albums",
-        slug="dxp-albs",
+    "dxp-labs": Project(
+        name="DXP Labs",
+        slug="dxp-labs",
         model="digital-prairie-labs/futuristic",
         trigger="TOK",
         description="Futuristic sci-fi landscapes and spaceships",
