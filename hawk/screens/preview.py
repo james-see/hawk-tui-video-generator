@@ -9,6 +9,7 @@ from pathlib import Path
 from rich.panel import Panel
 from rich.text import Text
 from PIL import Image
+import subprocess
 import io
 
 
@@ -76,7 +77,7 @@ class ImagePreview(Static):
         return Panel(
             ascii_art,
             title=f"[bold]{self.image_path.name}[/]",
-            subtitle="[dim]Press Esc/Enter/q to close[/]",
+            subtitle="[dim]Esc/q=close | ←/→=prev/next | f=full res[/]",
             border_style="#c9a227",
         )
 
@@ -96,9 +97,9 @@ class ImagePreviewScreen(Screen):
     """
 
     BINDINGS = [
-        Binding("escape", "close", "Close"),
-        Binding("enter", "close", "Close"),
+        Binding("escape", "close", "Close", priority=True),
         Binding("q", "close", "Close"),
+        Binding("f", "open_full", "Full Resolution"),
         Binding("left", "prev_image", "Previous"),
         Binding("right", "next_image", "Next"),
         Binding("h", "prev_image", "Previous"),
@@ -114,9 +115,21 @@ class ImagePreviewScreen(Screen):
     def compose(self) -> ComposeResult:
         yield ImagePreview(self.image_path, id="preview")
 
+    def on_mount(self) -> None:
+        """Open full resolution image in system viewer when preview opens."""
+        self._open_in_preview()
+
+    def _open_in_preview(self) -> None:
+        """Open current image in macOS Preview."""
+        subprocess.Popen(["open", str(self.image_path)])
+
     def action_close(self) -> None:
-        """Close the preview."""
-        self.app.pop_screen()
+        """Close the preview and return to main app."""
+        self.dismiss()
+
+    def action_open_full(self) -> None:
+        """Open current image in full resolution viewer."""
+        self._open_in_preview()
 
     def action_prev_image(self) -> None:
         """Show previous image."""
@@ -136,3 +149,5 @@ class ImagePreviewScreen(Screen):
         preview = self.query_one("#preview", ImagePreview)
         preview.image_path = self.image_path
         preview.refresh()
+        # Also open the new image in Preview
+        self._open_in_preview()
