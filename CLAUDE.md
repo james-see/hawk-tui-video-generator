@@ -4,59 +4,80 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Hawk TUI is a terminal-based CEO agent CLI powered by the Claude Agent SDK. It provides a keyboard-first interface for managing email, calendar, CRM, tasks, and content creation with AI assistance.
-
-**Status**: Project specification exists (`ceo-cli-claude-instructions-hawk-tui.md`) but implementation not yet started.
+Hawk TUI is a terminal-based TikTok video creator. It generates images using custom Replicate models and assembles them into 9:16 videos with FFmpeg. Think "CapCut TUI with AI".
 
 ## Tech Stack
 
-- **Agent Runtime**: Claude Agent SDK (Python)
 - **TUI Framework**: Textual + Rich
-- **Image Generation**: Replicate (FLUX models)
+- **Image Generation**: Replicate (custom trained models)
 - **Video Creation**: FFmpeg
-- **Package Manager**: uv (recommended) or pip
+- **AI**: Anthropic Claude (via anthropic SDK)
 - **Python Version**: 3.11+
 
 ## Build & Run Commands
 
 ```bash
-# Install dependencies (using uv)
-uv add claude-agent-sdk textual rich replicate httpx pillow python-dotenv
+# Install dependencies
+pip install -e .
+# or with uv
+uv pip install -e .
 
 # Run the TUI
 python -m hawk.main
-
-# Skip boot animation
-python -m hawk.main --no-boot
+# or after install
+hawk
 ```
 
 ## Architecture
 
-The project follows a modular skill-based architecture:
+```
+hawk/
+├── main.py              # Entry point
+├── app.py               # Main Textual TUI
+├── config.py            # Projects + model mappings
+├── replicate_client.py  # Replicate API wrapper
+├── video.py             # FFmpeg video assembly
+├── screens/             # TUI screens (future)
+└── widgets/             # TUI widgets (future)
+```
 
-- `hawk/main.py` - Entry point with PS2-style boot sequence
-- `hawk/app.py` - Main Textual TUI application with CEO CLI aesthetic
-- `hawk/agent.py` - Claude Agent SDK wrapper with MCP tools
-- `hawk/skills/` - Modular integrations (Gmail, Calendar, Fizzy, HubSpot, Snowflake, Replicate, FFmpeg)
-- `hawk/ui/` - TUI components (loading animations, theme, widgets, screens)
-- `hawk/mcp/` - MCP server for custom skills
+## Projects & Models
 
-## Key Design Patterns
+| Project | Replicate Model | Trigger | Use |
+|---------|-----------------|---------|-----|
+| wedding-vision | digital-prairie-labs/spring-wedding | TOK | Wedding florals |
+| latin-bible | digital-prairie-labs/catholic-prayers-v2.1 | - | Religious imagery |
+| dxp-albs | digital-prairie-labs/futuristic | TOK | Sci-fi scenes |
 
-- **Keyboard-first**: Single-letter shortcuts for all actions
-- **Human-in-the-loop**: AI proposes actions, user confirms before execution
-- **PS2 aesthetic**: Dark theme (#1a1d23), gold accents (#c9a227), green borders (#4a5f4a)
-- **Cruise mode**: Rapid-fire inbox review for quick processing
+## Content Structure
+
+```
+content/
+├── wedding-vision/
+│   ├── images/    # Generated images
+│   ├── audio/     # Audio files for videos
+│   └── exports/   # Final TikTok videos
+├── latin-bible/
+└── dxp-albs/
+```
+
+## Keyboard Shortcuts
+
+- `1/2/3` - Switch project
+- `g` - Generate images (uses prompt input)
+- `a` - Select all images
+- `s` - Toggle selection
+- `v` - Create video from selected
+- `o` - Show audio files
+- `b` - Open exports folder
+- `d` - Delete selected images
+- `q` - Quit
 
 ## Environment Variables
 
-Required API keys go in `.env` (never commit):
-- `ANTHROPIC_API_KEY` - Claude Agent SDK
-- `REPLICATE_API_TOKEN` - Image generation
-- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` - Gmail/Calendar
-- `FIZZY_ACCESS_TOKEN` - 37signals kanban
-- `HUBSPOT_API_KEY` - CRM
-- Snowflake credentials
+Required in `.env`:
+- `REPLICATE_API_TOKEN` - Replicate API
+- `ANTHROPIC_API_KEY` - Claude API (optional, for prompt enhancement)
 
 ## Git Workflow
 
