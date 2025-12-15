@@ -41,11 +41,13 @@ pip install hawk-tui-video
 - Python 3.11+
 - FFmpeg (for video creation)
 - [Ollama](https://ollama.ai/) (optional, for prompt enhancement)
+- [chafa](https://hpjansson.org/chafa/) (optional, for in-terminal image preview)
 
 ```bash
 # macOS
 brew install ffmpeg
 brew install ollama  # optional, for prompt enhancement
+brew install chafa   # optional, for in-terminal image preview
 
 # Ubuntu/Debian
 sudo apt install ffmpeg
@@ -139,7 +141,8 @@ The model will download on first run (~6-23GB depending on model).
 | `Enter` | Select project / Open image / Submit prompt |
 | `Space` | Toggle image selection |
 | `a` | Select all images |
-| `v` | Create video from selected images |
+| `p` | Preview image (chafa in-terminal or Quick Look) |
+| `v` | Create video from selected images (with captions) |
 | `b` | Browse project folder in Finder |
 | `d` | Delete selected images |
 | `l` | View logs (for debugging) |
