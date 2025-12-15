@@ -100,15 +100,19 @@ def preload_model(
         
         from diffusers import AutoPipelineForText2Image
         
-        # Determine device
+        # Determine device and dtype
+        # Note: Flux requires bfloat16 on MPS (float16 produces black images)
+        is_flux = "flux" in model_name.lower()
+        
         if torch.cuda.is_available():
             device = "cuda"
-            dtype = torch.float16
+            dtype = torch.bfloat16 if is_flux else torch.float16
             update("Using CUDA GPU")
         elif torch.backends.mps.is_available():
             device = "mps"
-            dtype = torch.float16
-            update("Using Apple Silicon (MPS)")
+            # MPS + Flux requires bfloat16; other models use float16
+            dtype = torch.bfloat16 if is_flux else torch.float16
+            update(f"Using Apple Silicon (MPS) with {'bfloat16' if is_flux else 'float16'}")
         else:
             device = "cpu"
             dtype = torch.float32
@@ -274,6 +278,7 @@ def generate_image(
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     
     # Create step callback for progress updates
+    # Note: Different pipelines use different callback signatures
     def step_callback(pipe, step, timestep, callback_kwargs):
         if progress_callback:
             progress_callback(step + 1, num_inference_steps, f"Step {step + 1}/{num_inference_steps}")
@@ -281,18 +286,31 @@ def generate_image(
     
     for i in range(num_outputs):
         if progress_callback:
-            progress_callback(0, num_inference_steps, f"Starting image {i + 1}/{num_outputs}...")
+            progress_callback(0, num_inference_steps, f"Generating image {i + 1}/{num_outputs}...")
         
-        # Generate image
-        result = pipeline(
-            prompt=prompt,
-            width=width,
-            height=height,
-            num_inference_steps=num_inference_steps,
-            guidance_scale=guidance_scale,
-            generator=generator,
-            callback_on_step_end=step_callback,
-        )
+        # Build pipeline kwargs - not all pipelines support all params
+        pipe_kwargs = {
+            "prompt": prompt,
+            "width": width,
+            "height": height,
+            "num_inference_steps": num_inference_steps,
+            "generator": generator,
+        }
+        
+        # Only add guidance_scale if > 0 (Flux doesn't use it)
+        if guidance_scale > 0:
+            pipe_kwargs["guidance_scale"] = guidance_scale
+        
+        # Try to add callback - not all pipelines support it
+        try:
+            pipe_kwargs["callback_on_step_end"] = step_callback
+            result = pipeline(**pipe_kwargs)
+        except TypeError:
+            # Fallback without callback if not supported
+            del pipe_kwargs["callback_on_step_end"]
+            if progress_callback:
+                progress_callback(1, num_inference_steps, f"Generating... (no step progress for this model)")
+            result = pipeline(**pipe_kwargs)
         
         image = result.images[0]
         
@@ -331,4 +349,33 @@ def unload_model():
                 torch.cuda.empty_cache()
         except ImportError:
             pass
+
+
+def imgcat(image_path: Path, width: int = 40) -> str:
+    """
+    Generate iTerm2 imgcat escape sequence for displaying image in terminal.
+    
+    Args:
+        image_path: Path to the image file
+        width: Display width in terminal columns
+    
+    Returns:
+        Escape sequence string to display the image
+    """
+    import base64
+    
+    with open(image_path, "rb") as f:
+        image_data = f.read()
+    
+    b64_data = base64.b64encode(image_data).decode("ascii")
+    
+    # iTerm2 inline image protocol
+    # \033]1337;File=inline=1;width=Ncols:BASE64\007
+    return f"\033]1337;File=inline=1;width={width}:{b64_data}\007"
+
+
+def print_image(image_path: Path, width: int = 40) -> None:
+    """Print an image to the terminal using iTerm2 imgcat protocol."""
+    import sys
+    print(imgcat(image_path, width), file=sys.stdout, flush=True)
 

@@ -12,8 +12,10 @@ from rich.panel import Panel
 from pathlib import Path
 
 from hawk.config import PROJECTS, COLORS, Project, USE_OLLAMA, USE_LOCAL_IMAGE_GEN, VERBOSE
-from hawk import image_generator, video, logger
+from hawk import image_generator, video
+from hawk.logger import logger
 from hawk.screens.splash import SplashScreen
+from hawk.screens.captions import CaptionEditor
 
 
 class ProjectSelector(Static, can_focus=True):
@@ -279,6 +281,7 @@ class HawkTUI(App):
         Binding("v", "create_video", "Video"),
         Binding("d", "delete_selected", "Delete"),
         Binding("l", "view_logs", "Logs"),
+        Binding("p", "preview_image", "Preview"),
         Binding("1", "select_project_1", "Wedding"),
         Binding("2", "select_project_2", "Latin"),
         Binding("3", "select_project_3", "DXP"),
@@ -313,10 +316,11 @@ class HawkTUI(App):
 [bold]Images[/]
 [{COLORS['accent']}]Space[/] Toggle select
 [{COLORS['accent']}]a[/] Select all
+[{COLORS['accent']}]p[/] Preview (iTerm2)
 [{COLORS['accent']}]Esc[/] Clear selection
 
 [bold]Actions[/]
-[{COLORS['accent']}]v[/] Create video
+[{COLORS['accent']}]v[/] Create video + captions
 [{COLORS['accent']}]b[/] Browse folder
 [{COLORS['accent']}]d[/] Delete selected
 [{COLORS['accent']}]l[/] View logs
@@ -507,23 +511,57 @@ class HawkTUI(App):
         self.refresh_images()
         self.set_status(f"Deleted {count} images")
 
-    @work(exclusive=True, thread=True)
     def action_create_video(self) -> None:
-        """Create video from selected images."""
+        """Create video from selected images - shows caption editor first."""
         selected = self.image_list.selected_indices
         images = self.image_list.images
+        
+        logger.info(f"Create video requested: {len(selected)} images selected")
 
         if not selected:
-            self.call_from_thread(self.set_status, "Select images first (Space or 'a' for all)")
+            self.set_status("⚠️ Select images first! Use Space to select, 'a' for all")
             return
 
-        self.call_from_thread(self.set_status, "Creating video...", True)
+        # Get selected image paths
+        selected_paths = [images[i] for i in sorted(selected)]
+        
+        # Show caption editor modal
+        def handle_captions(captions: list[str] | None) -> None:
+            if captions is None:
+                # User cancelled
+                self.set_status("Video creation cancelled")
+                return
+            
+            # Create video with or without captions
+            self._create_video_with_captions(selected_paths, captions)
+        
+        self.push_screen(CaptionEditor(selected_paths), handle_captions)
+
+    @work(exclusive=True, thread=True)
+    def _create_video_with_captions(self, selected_paths: list[Path], captions: list[str]) -> None:
+        """Actually create the video (runs in thread)."""
+        self.call_from_thread(self.set_status, f"Creating video from {len(selected_paths)} images...", True)
         try:
-            selected_paths = [images[i] for i in sorted(selected)]
-            output = video.create_slideshow(self.project, selected_paths)
-            self.call_from_thread(self.set_status, f"Video saved: {output.name}")
+            logger.info(f"Creating slideshow: {[p.name for p in selected_paths]}")
+            logger.info(f"Captions: {captions}")
+            
+            # Only pass captions if at least one is non-empty
+            has_captions = any(c.strip() for c in captions) if captions else False
+            output = video.create_slideshow(
+                self.project,
+                selected_paths,
+                captions=captions if has_captions else None,
+            )
+            
+            logger.info(f"Video saved: {output}")
+            self.call_from_thread(self.set_status, f"✅ Video saved: {output.name}")
+            
+            # Open the exports folder
+            import subprocess
+            subprocess.run(["open", str(output.parent)])
         except Exception as e:
-            self.call_from_thread(self.set_status, f"Error: {str(e)[:50]}")
+            logger.error(f"Video creation failed: {e}")
+            self.call_from_thread(self.set_status, f"❌ Error: {str(e)[:60]}")
 
     def action_browse(self) -> None:
         """Open the project images folder."""
@@ -537,6 +575,38 @@ class HawkTUI(App):
         from hawk.config import LOG_FILE
         subprocess.run(["open", str(LOG_FILE)])
         self.set_status(f"Opened log: {LOG_FILE}")
+
+    def action_preview_image(self) -> None:
+        """Preview current image using iTerm2 imgcat protocol."""
+        images = self.image_list.images
+        cursor = self.image_list.cursor
+        
+        if not images or cursor >= len(images):
+            self.set_status("No image to preview")
+            return
+        
+        image_path = images[cursor]
+        
+        # Suspend TUI, show image, resume
+        import sys
+        from hawk import local_image_gen
+        
+        # Exit alternate screen temporarily
+        sys.stdout.write("\033[?1049l")  # Exit alternate screen
+        sys.stdout.flush()
+        
+        print(f"\n📷 Preview: {image_path.name}\n")
+        local_image_gen.print_image(image_path, width=60)
+        print("\n[Press Enter to return to HawkTUI]")
+        input()
+        
+        # Re-enter alternate screen
+        sys.stdout.write("\033[?1049h")  # Enter alternate screen
+        sys.stdout.flush()
+        
+        # Force refresh
+        self.refresh()
+        self.set_status(f"Previewed: {image_path.name}")
 
 
 def main():

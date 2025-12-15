@@ -89,3 +89,7 @@ def clear_logs() -> None:
     """Clear in-memory logs."""
     _log_messages.clear()
 
+
+# Module-level logger instance for convenience
+logger = get_logger()
+
