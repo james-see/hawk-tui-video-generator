@@ -1,8 +1,18 @@
 # HawkTUI
 
-Terminal-based TikTok video creator with AI image generation.
+A terminal-based TikTok video creator with AI image generation. Generate images using custom Replicate models and assemble them into 9:16 TikTok-format videos with FFmpeg.
 
-Generate images using custom Replicate models and assemble them into 9:16 TikTok videos with FFmpeg.
+[![PyPI version](https://badge.fury.io/py/hawk-tui-video.svg)](https://pypi.org/project/hawk-tui-video/)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+
+## Features
+
+- **AI Image Generation** - Generate images using custom Replicate fine-tuned models
+- **TikTok Video Creation** - Automatically assemble images into 9:16 vertical videos
+- **Multiple Projects** - Switch between different Replicate models/styles
+- **Terminal UI** - Beautiful TUI built with Textual
+- **Keyboard-Driven** - Fast workflow with intuitive shortcuts
 
 ## Installation
 
@@ -21,69 +31,129 @@ brew install ffmpeg
 
 # Ubuntu/Debian
 sudo apt install ffmpeg
+
+# Windows
+# Download from https://ffmpeg.org/download.html
 ```
 
-## Setup
+## Quick Start
 
-1. Get your API token from [Replicate](https://replicate.com/account/api-tokens)
+1. **Get a Replicate API token** from [replicate.com/account/api-tokens](https://replicate.com/account/api-tokens)
 
-2. Create a `.env` file in your project directory:
+2. **Create a `.env` file** in your working directory:
 
 ```bash
 REPLICATE_API_TOKEN=r8_your_token_here
 ```
 
-3. Configure your models in `hawk/config.py`
+3. **Run HawkTUI**:
+
+```bash
+hawktui
+```
 
 ## Usage
 
-```bash
-# Run the TUI
-hawktui
-
-# Or
-hawk
-```
-
-## Keyboard Shortcuts
+### Keyboard Shortcuts
 
 | Key | Action |
 |-----|--------|
-| `↑/↓` | Navigate |
-| `Tab` | Switch panels |
-| `Enter` | Select/Open |
+| `↑/↓` or `j/k` | Navigate lists |
+| `Tab` | Switch between panels |
+| `Enter` | Select project / Open image / Submit prompt |
 | `Space` | Toggle image selection |
 | `a` | Select all images |
-| `v` | Create video |
-| `b` | Browse folder |
-| `d` | Delete selected |
-| `1/2/3` | Switch projects |
+| `v` | Create video from selected images |
+| `b` | Browse project folder in Finder |
+| `d` | Delete selected images |
+| `1/2/3` | Quick switch projects |
+| `Esc` | Clear selection / Cancel |
 | `q` | Quit |
 
-## How It Works
+### Workflow
 
-1. **Select a project** - Choose from your configured Replicate models
-2. **Enter a prompt** - Type your image generation prompt
-3. **Generate** - Press Enter to generate images via Replicate
-4. **Select images** - Use Space to select images for your video
-5. **Create video** - Press `v` to assemble a TikTok-format video
+1. **Select a project** using arrow keys or number shortcuts
+2. **Type a prompt** in the input field at the bottom
+3. **Press Enter** to generate an image via Replicate
+4. **Select images** using Space to toggle selection
+5. **Press `v`** to create a TikTok video from selected images
 
 ## Configuration
 
-Edit `hawk/config.py` to add your own Replicate models:
+### Adding Your Own Models
+
+Edit `hawk/config.py` to add your Replicate models:
 
 ```python
 PROJECTS = {
-    "my-project": Project(
-        name="My Project",
-        slug="my-project",
-        model="username/model-name",
-        trigger="TOK",  # Optional trigger word
-        description="Description",
+    "my-style": Project(
+        name="My Style",
+        slug="my-style",
+        model="your-username/your-model",
+        trigger="TOK",  # Trigger word if your model uses one
+        description="Description of your model",
     ),
 }
 ```
 
+### Default Models
+
+The app comes pre-configured with three example models from Digital Prairie Labs:
+
+| Project | Model | Style |
+|---------|-------|-------|
+| Wedding Vision | `digital-prairie-labs/spring-wedding` | Wedding florals |
+| Latin Bible | `digital-prairie-labs/catholic-prayers-v2.1` | Religious imagery |
+| DXP Labs | `digital-prairie-labs/futuristic` | Sci-fi landscapes |
+
+## Project Structure
+
+```
+hawk/
+├── app.py              # Main Textual TUI application
+├── config.py           # Project and model configuration
+├── replicate_client.py # Replicate API wrapper
+├── video.py            # FFmpeg video assembly
+├── screens/
+│   └── splash.py       # Splash screen
+└── main.py             # Entry point
+
+content/                # Generated content (created automatically)
+├── {project}/
+│   ├── images/         # Generated images
+│   ├── audio/          # Audio files for videos
+│   └── exports/        # Final TikTok videos
+```
+
+## Development
+
+```bash
+# Clone the repo
+git clone https://github.com/carsonmulligan/hawktui.git
+cd hawktui
+
+# Install in development mode
+pip install -e .
+
+# Run
+python -m hawk.main
+```
+
+## Tech Stack
+
+- **[Textual](https://textual.textualize.io/)** - TUI framework
+- **[Rich](https://rich.readthedocs.io/)** - Terminal formatting
+- **[Replicate](https://replicate.com/)** - AI model inference
+- **[FFmpeg](https://ffmpeg.org/)** - Video processing
+
 ## License
 
-MIT
+Apache License 2.0 - see [LICENSE](LICENSE) for details.
+
+## Author
+
+**Carson Mulligan** - [GitHub](https://github.com/carsonmulligan)
+
+---
+
+Built with [Claude Code](https://claude.ai/code)
