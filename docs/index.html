@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HawkTUI - Terminal TikTok Video Creator</title>
+    <meta name="description" content="A terminal-based TikTok video creator with AI image generation. Generate images using Replicate models and create 9:16 videos.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #1a1d23;
+            --fg: #e0e0e0;
+            --accent: #c9a227;
+            --green: #4a5f4a;
+            --dim: #6b7280;
+            --border: #3d4f3d;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg);
+            color: var(--fg);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Terminal window styling */
+        .terminal {
+            background: #0d1117;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .terminal-header {
+            background: #21262d;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .terminal-btn {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .terminal-btn.red { background: #ff5f56; }
+        .terminal-btn.yellow { background: #ffbd2e; }
+        .terminal-btn.green { background: #27ca40; }
+
+        .terminal-title {
+            color: var(--dim);
+            font-size: 13px;
+            margin-left: 10px;
+        }
+
+        .terminal-body {
+            padding: 20px;
+            font-size: 14px;
+        }
+
+        /* ASCII Art Header */
+        .ascii-header {
+            color: var(--accent);
+            white-space: pre;
+            font-size: 10px;
+            line-height: 1.2;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        @media (min-width: 600px) {
+            .ascii-header {
+                font-size: 12px;
+            }
+        }
+
+        /* Prompt styling */
+        .prompt {
+            color: var(--green);
+        }
+
+        .prompt::before {
+            content: "$ ";
+            color: var(--accent);
+        }
+
+        .output {
+            color: var(--dim);
+            margin: 5px 0 15px 0;
+        }
+
+        .highlight {
+            color: var(--accent);
+        }
+
+        .success {
+            color: #27ca40;
+        }
+
+        /* Sections */
+        h2 {
+            color: var(--accent);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+            margin: 30px 0 15px 0;
+            font-size: 16px;
+        }
+
+        h2::before {
+            content: "## ";
+            color: var(--dim);
+        }
+
+        /* Feature list */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .feature {
+            background: #21262d;
+            border: 1px solid var(--border);
+            padding: 15px;
+            border-radius: 4px;
+        }
+
+        .feature-title {
+            color: var(--accent);
+            margin-bottom: 5px;
+        }
+
+        .feature-title::before {
+            content: "▶ ";
+        }
+
+        .feature-desc {
+            color: var(--dim);
+            font-size: 13px;
+        }
+
+        /* Keyboard shortcuts */
+        .shortcuts {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .shortcut {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        kbd {
+            background: #21262d;
+            border: 1px solid var(--border);
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            color: var(--accent);
+            min-width: 30px;
+            text-align: center;
+        }
+
+        /* Install button */
+        .install-section {
+            text-align: center;
+            margin: 40px 0;
+        }
+
+        .install-cmd {
+            background: #21262d;
+            border: 2px solid var(--accent);
+            padding: 15px 30px;
+            border-radius: 6px;
+            font-size: 18px;
+            display: inline-block;
+            margin: 10px 0;
+        }
+
+        .install-cmd .prompt {
+            color: var(--accent);
+        }
+
+        /* Links */
+        a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--dim);
+            font-size: 13px;
+            border-top: 1px solid var(--border);
+            margin-top: 40px;
+        }
+
+        footer a {
+            color: var(--fg);
+        }
+
+        /* Badges */
+        .badges {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+
+        .badge {
+            background: #21262d;
+            border: 1px solid var(--border);
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .badge.pypi { border-color: #3775a9; }
+        .badge.license { border-color: #97ca00; }
+        .badge.python { border-color: #3776ab; }
+
+        /* Demo section */
+        .demo-box {
+            background: #0d1117;
+            border: 1px solid var(--border);
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+
+        .panel {
+            border: 1px solid var(--border);
+            margin: 5px 0;
+            padding: 10px;
+        }
+
+        .panel-title {
+            color: var(--accent);
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="terminal">
+            <div class="terminal-header">
+                <div class="terminal-btn red"></div>
+                <div class="terminal-btn yellow"></div>
+                <div class="terminal-btn green"></div>
+                <span class="terminal-title">hawktui</span>
+            </div>
+            <div class="terminal-body">
+                <pre class="ascii-header">
+    __  __               __   ________  ______
+   / / / /___ __      __/ /__/_  __/ / / /  _/
+  / /_/ / __ `/ | /| / / //_// / / / / // /
+ / __  / /_/ /| |/ |/ / ,<  / / / /_/ // /
+/_/ /_/\__,_/ |__/|__/_/|_|/_/  \____/___/
+
+    Terminal TikTok Video Creator with AI
+                </pre>
+
+                <div class="badges">
+                    <span class="badge pypi">PyPI: hawk-tui-video</span>
+                    <span class="badge license">Apache 2.0</span>
+                    <span class="badge python">Python 3.11+</span>
+                </div>
+
+                <p style="text-align: center; margin: 20px 0;">
+                    Generate AI images with <span class="highlight">Replicate</span> models<br>
+                    and create <span class="highlight">9:16 TikTok videos</span> from your terminal.
+                </p>
+            </div>
+        </div>
+
+        <div class="install-section">
+            <p style="color: var(--dim); margin-bottom: 10px;">Install with pip:</p>
+            <div class="install-cmd">
+                <span class="prompt">pip install hawk-tui-video</span>
+            </div>
+            <p style="color: var(--dim); margin-top: 15px; font-size: 13px;">
+                Then run: <code style="color: var(--accent);">hawktui</code> or <code style="color: var(--accent);">hawk</code>
+            </p>
+        </div>
+
+        <h2>Features</h2>
+        <div class="features">
+            <div class="feature">
+                <div class="feature-title">AI Image Generation</div>
+                <div class="feature-desc">Generate images using custom Replicate fine-tuned models</div>
+            </div>
+            <div class="feature">
+                <div class="feature-title">TikTok Videos</div>
+                <div class="feature-desc">Automatically assemble images into 9:16 vertical videos</div>
+            </div>
+            <div class="feature">
+                <div class="feature-title">Multiple Projects</div>
+                <div class="feature-desc">Switch between different Replicate models and styles</div>
+            </div>
+            <div class="feature">
+                <div class="feature-title">Keyboard-Driven</div>
+                <div class="feature-desc">Fast workflow with intuitive vim-style shortcuts</div>
+            </div>
+        </div>
+
+        <h2>Demo</h2>
+        <div class="terminal">
+            <div class="terminal-header">
+                <div class="terminal-btn red"></div>
+                <div class="terminal-btn yellow"></div>
+                <div class="terminal-btn green"></div>
+                <span class="terminal-title">hawktui - main</span>
+            </div>
+            <div class="terminal-body">
+                <div style="display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 10px; font-size: 12px;">
+                    <div class="panel">
+                        <div class="panel-title">PROJECTS</div>
+                        <div><span class="highlight">▶ [1]</span> Wedding Vision</div>
+                        <div style="color: var(--dim);">  [2] Latin Bible</div>
+                        <div style="color: var(--dim);">  [3] DXP Labs</div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-title">IMAGES (3)</div>
+                        <div><span class="highlight">▶</span><span class="success">✓</span> wedding_bouquet_1.png</div>
+                        <div> <span class="success">✓</span> spring_flowers_2.png</div>
+                        <div>   garden_scene_3.png</div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-title">SHORTCUTS</div>
+                        <div style="color: var(--dim); font-size: 11px;">
+                            ↑/↓ Navigate<br>
+                            Space Select<br>
+                            v Create video<br>
+                            Enter Generate
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top: 15px; padding: 8px; background: #21262d; border-radius: 4px;">
+                    <span style="color: var(--dim);">Enter prompt:</span> <span class="highlight">beautiful spring wedding bouquet█</span>
+                </div>
+                <div style="margin-top: 10px; color: var(--green);">✓ Generated 1 image(s)</div>
+            </div>
+        </div>
+
+        <h2>Keyboard Shortcuts</h2>
+        <div class="shortcuts">
+            <div class="shortcut"><kbd>↑↓</kbd> <span>Navigate</span></div>
+            <div class="shortcut"><kbd>Tab</kbd> <span>Switch panels</span></div>
+            <div class="shortcut"><kbd>Enter</kbd> <span>Select / Generate</span></div>
+            <div class="shortcut"><kbd>Space</kbd> <span>Toggle selection</span></div>
+            <div class="shortcut"><kbd>a</kbd> <span>Select all</span></div>
+            <div class="shortcut"><kbd>v</kbd> <span>Create video</span></div>
+            <div class="shortcut"><kbd>b</kbd> <span>Browse folder</span></div>
+            <div class="shortcut"><kbd>d</kbd> <span>Delete selected</span></div>
+            <div class="shortcut"><kbd>1-3</kbd> <span>Quick switch project</span></div>
+            <div class="shortcut"><kbd>q</kbd> <span>Quit</span></div>
+        </div>
+
+        <h2>Requirements</h2>
+        <div class="demo-box">
+            <div class="prompt">brew install ffmpeg</div>
+            <div class="output"># macOS - install FFmpeg for video creation</div>
+
+            <div class="prompt">echo "REPLICATE_API_TOKEN=r8_xxx" > .env</div>
+            <div class="output"># Get your token from replicate.com/account/api-tokens</div>
+        </div>
+
+        <h2>Links</h2>
+        <div class="features">
+            <div class="feature">
+                <div class="feature-title"><a href="https://pypi.org/project/hawk-tui-video/">PyPI Package</a></div>
+                <div class="feature-desc">pip install hawk-tui-video</div>
+            </div>
+            <div class="feature">
+                <div class="feature-title"><a href="https://github.com/carsonmulligan/hawktui">GitHub Repository</a></div>
+                <div class="feature-desc">Source code and issues</div>
+            </div>
+            <div class="feature">
+                <div class="feature-title"><a href="https://replicate.com/">Replicate</a></div>
+                <div class="feature-desc">AI model platform</div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Built by <a href="https://github.com/carsonmulligan">Carson Mulligan</a></p>
+            <p style="margin-top: 10px;">
+                <a href="https://github.com/carsonmulligan/hawktui">GitHub</a> ·
+                <a href="https://pypi.org/project/hawk-tui-video/">PyPI</a> ·
+                Apache 2.0 License
+            </p>
+            <p style="margin-top: 20px; font-size: 11px;">
+                Built with <a href="https://claude.ai/code">Claude Code</a>
+            </p>
+        </footer>
+    </div>
+</body>
+</html>
